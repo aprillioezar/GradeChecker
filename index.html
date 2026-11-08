@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GradeChecker</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: Arial, sans-serif;
+    }
+
+    body {
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background: linear-gradient(135deg, #102a43, #2563eb);
+      padding: 20px;
+    }
+
+    .login-box {
+      background: white;
+      width: 100%;
+      max-width: 420px;
+      padding: 35px;
+      border-radius: 18px;
+      box-shadow: 0 10px 35px rgba(0,0,0,0.2);
+    }
+
+    h1 {
+      text-align: center;
+      color: #1d4ed8;
+      margin-bottom: 10px;
+    }
+
+    .subtitle {
+      text-align: center;
+      color: #64748b;
+      margin-bottom: 30px;
+    }
+
+    label {
+      display: block;
+      margin: 15px 0 7px;
+      font-weight: bold;
+      color: #334155;
+    }
+
+    input, select {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      font-size: 15px;
+    }
+
+    button {
+      width: 100%;
+      padding: 13px;
+      margin-top: 25px;
+      border: none;
+      border-radius: 8px;
+      background: #2563eb;
+      color: white;
+      font-size: 16px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: #1d4ed8;
+    }
+
+    .footer {
+      text-align: center;
+      margin-top: 25px;
+      color: #94a3b8;
+      font-size: 12px;
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="login-box">
+    <h1>GradeChecker</h1>
+    <p class="subtitle">Sistem Informasi Nilai Sekolah</p>
+
+    <form id="loginForm">
+      <label for="role">Masuk sebagai</label>
+      <select id="role" required>
+        <option value="">Pilih peran</option>
+        <option value="admin">Admin</option>
+        <option value="guru">Guru</option>
+        <option value="siswa">Siswa</option>
+      </select>
+
+      <label for="email">Email</label>
+      <input
+        type="email"
+        id="email"
+        placeholder="Masukkan email"
+        required
+      >
+
+      <label for="password">Password</label>
+      <input
+        type="password"
+        id="password"
+        placeholder="Masukkan password"
+        required
+      >
+
+      <button type="submit">Masuk</button>
+    </form>
+   <div id="registerSection">
+  <h3>Belum punya akun?</h3>
+  <button type="button" id="showRegisterButton">
+    Daftar Akun
+  </button>
+</div>
+
+<div id="registerForm" style="display:none;">
+  <h2>Daftar Akun Siswa</h2>
+
+  <input type="text" id="registerName" placeholder="Nama lengkap">
+
+  <br><br>
+
+  <input type="email" id="registerEmail" placeholder="Email">
+
+  <br><br>
+
+  <input type="password" id="registerPassword" placeholder="Password">
+
+  <br><br>
+
+  <button type="button" id="registerButton">Daftar</button>
+  <button type="button" id="backToLoginButton">Kembali</button>
+
+  <p id="registerMessage"></p>
+</div>
+    <div id="studentDashboard" style="display:none;">
+  <h1>Dashboard Siswa</h1>
+  <p>Selamat datang di GradeChecker!</p>
+  <h2>Nilai Saya</h2>
+  <div id="studentGrades">
+    Memuat nilai...
+  </div>
+  <button id="logoutButton">Keluar</button>
+</div>
+
+    <p class="footer">
+      © 2026 GradeChecker | Sistem Akademik Sekolah
+    </p>
+  </div>
+<div id="teacherDashboard" style="display:none;">
+  <h1>Dashboard Guru</h1>
+  <p>Selamat datang, Guru!</p>
+
+  <h2>Input Nilai Siswa</h2>
+
+  <label>ID Siswa:</label>
+  <input type="text" id="teacherStudentId" placeholder="Masukkan ID siswa">
+
+  <br><br>
+
+  <label>Mata Pelajaran:</label>
+  <select id="teacherSubject">
+    <option value="1">Matematika</option>
+  </select>
+
+  <br><br>
+
+  <label>Nilai:</label>
+  <input type="number" id="teacherScore" placeholder="Masukkan nilai">
+
+  <br><br>
+
+  <button id="saveGradeButton">Simpan Nilai</button>
+  <button id="teacherLogoutButton">Keluar</button>
+
+  <p id="teacherMessage"></p>
+</div>
+ <script type="module">
+  import { supabase } from "./supabase.js";
+
+ async function  loadStudentGrades(studentId) {
+  const { data: grades, error } = await supabase
+    .from("grades")
+    .select("score, subjects(name)")
+    .eq("student_id", studentId);
+
+  const container = document.getElementById("studentGrades");
+
+  if (error) {
+    container.textContent = "Gagal memuat nilai: " + error.message;
+    return;
+  }
+
+  if (!grades || grades.length === 0) {
+    container.textContent = "Belum ada nilai.";
+    return;
+  }
+
+  container.innerHTML = "";
+
+  grades.forEach((grade) => {
+    const item = document.createElement("p");
+    item.textContent = (grade.subjects?.name || "Mata pelajaran") +
+      " — Nilai: " + grade.score;
+    container.appendChild(item);
+  });
+}
+  document.getElementById("loginForm").addEventListener("submit", async function(event) {
+    event.preventDefault();
+
+    const email = document.getElementById("email").value;
+    const password = document.getElementById("password").value;
+    const selectedRole = document.getElementById("role").value;
+
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password
+    });
+
+    if (error) {
+      alert("Login gagal: " + error.message);
+      return;
+    }
+
+    const { data: profile, error: profileError } = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("id", data.user.id)
+      .single();
+
+    if (profileError || profile.role !== selectedRole) {
+      await supabase.auth.signOut();
+      alert("Peran akun tidak sesuai!");
+      return;
+    }
+
+    if (profile.role === "siswa") {
+  document.getElementById("loginForm").style.display = "none";
+  document.getElementById("studentDashboard").style.display = "block";
+  await loadStudentGrades(data.user.id);
+} else if (profile.role === "guru") {
+  document.getElementById("loginForm").style.display = "none";
+  document.getElementById("teacherDashboard").style.display = "block";
+} else {
+  alert("Login berhasil sebagai " + profile.role + "!");
+}
+  });
+  document.getElementById("logoutButton").addEventListener("click", async function() {
+  await supabase.auth.signOut();
+  document.getElementById("studentDashboard").style.display = "none";
+  document.getElementById("loginForm").style.display = "block";
+});
+document.getElementById("teacherLogoutButton").addEventListener("click", async function() {
+  await supabase.auth.signOut();
+  document.getElementById("teacherDashboard").style.display = "none";
+  document.getElementById("loginForm").style.display = "block";
+});
+document.getElementById("saveGradeButton").addEventListener("click", async function() {
+  const studentId = document.getElementById("teacherStudentId").value.trim();
+  const subjectId = document.getElementById("teacherSubject").value;
+  const score = Number(document.getElementById("teacherScore").value);
+  const message = document.getElementById("teacherMessage");
+
+  if (!studentId || document.getElementById("teacherScore").value === "") {
+    message.textContent = "Lengkapi ID siswa dan nilai!";
+    return;
+  }
+
+  if (!Number.isFinite(score) || score < 0 || score > 100) {
+    message.textContent = "Nilai harus antara 0 sampai 100!";
+    return;
+  }
+
+  const { data: userData } = await supabase.auth.getUser();
+
+  const { error } = await supabase.from("grades").insert({
+    student_id: studentId,
+    subject_id: Number(subjectId),
+    teacher_id: userData.user.id,
+    score: score
+  });
+
+  if (error) {
+    message.textContent = "Gagal menyimpan: " + error.message;
+    return;
+  }
+
+  message.textContent = "Nilai berhasil disimpan!";
+});
+document.getElementById("showRegisterButton").addEventListener("click", function() {
+  document.getElementById("loginForm").style.display = "none";
+  document.getElementById("registerSection").style.display = "none";
+  document.getElementById("registerForm").style.display = "block";
+});
+
+document.getElementById("backToLoginButton").addEventListener("click", function() {
+  document.getElementById("registerForm").style.display = "none";
+  document.getElementById("registerSection").style.display = "block";
+  document.getElementById("loginForm").style.display = "block";
+});
+
+document.getElementById("registerButton").addEventListener("click", async function() {
+  const fullName = document.getElementById("registerName").value.trim();
+  const email = document.getElementById("registerEmail").value.trim();
+  const password = document.getElementById("registerPassword").value;
+  const message = document.getElementById("registerMessage");
+
+  if (!fullName || !email || !password) {
+    message.textContent = "Lengkapi semua data!";
+    return;
+  }
+
+  if (password.length < 6) {
+    message.textContent = "Password minimal 6 karakter!";
+    return;
+  }
+
+  const { error } = await supabase.auth.signUp({
+    email: email,
+    password: password,
+    options: {
+      data: {
+        full_name: fullName
+      }
+    }
+  });
+
+  if (error) {
+    message.textContent = "Pendaftaran gagal: " + error.message;
+    return;
+  }
+
+  message.textContent = "Pendaftaran berhasil! Silakan periksa email jika diminta verifikasi.";
+});
+</script>
+
+</body>
+</html>
